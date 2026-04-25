@@ -70,9 +70,17 @@ ffmpeg -y -ss {IN} -to {OUT} -i {source} \
 - Move/copy the file into the repo: `docs/shorts/{slug}.mp4`
 
 ### 6. Create the SRT
-- Take the matching blocks from the source SRT
-- Zero the timestamps (subtract the IN timecode from all timestamps)
-- Write to `docs/transcripts/short_{slug}.srt`
+**Do NOT zero the source SRT timestamps** — offset-from-source has drift and goes out of sync by the end of the clip. Instead, run Whisper on the cut clip itself to get accurate timings, then overlay the clean text:
+
+```bash
+cd ~/projects/transcriber && source venv/bin/activate && python3 transcribe.py \
+  /path/to/repo/docs/shorts/{slug}.mp4 \
+  -l en -m base \
+  -o /tmp/short_retranscribe \
+  --format both
+```
+
+Then write `docs/transcripts/short_{slug}.srt` using **Whisper's timestamps** but **the clean text** from the source SRT (Whisper's text will have garbled proper nouns and filler words — always swap in the cleaned version). Align text blocks to Whisper's segment boundaries; merge or split segments as needed to fit the clean text naturally.
 
 ### 7. Burn in subtitles (English)
 YouTube Shorts auto-display the caption track unreliably on mobile, so bake subs into the pixels. Keep the un-burned `{slug}.mp4` around so you can produce zh-Hant / zh-Hans burns later from the same source.
